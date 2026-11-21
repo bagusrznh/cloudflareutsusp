@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Update Unit UTS</title>
+<style>
+:root{--bg:#f3f5f7;--ink:#14202b;--mute:#5d6b78;--line:#cfd7de;--plate:#f7c600;--ok:#1f6f5c;--err:#b3261e}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1040px;margin:0 auto;padding:16px 16px 120px}
+h1{font-size:1.2rem;margin:8px 0 16px}
+label{display:block;margin:16px 0 6px;font-weight:600}
+input,select,textarea{width:100%;font:inherit;color:inherit;padding:12px;min-height:48px;border:1px solid var(--line);border-radius:10px;background:#fff}
+textarea{min-height:110px;resize:vertical}
+:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button{font:inherit;cursor:pointer}
+.primary{background:var(--ink);color:#fff;border:0;border-radius:10px;padding:0 28px;min-height:48px;font-weight:600}
+.primary:disabled{opacity:.5}
+#login{max-width:360px}
+#q{font-size:1.15rem;letter-spacing:.04em;border:2px solid var(--ink)}
+#hits{list-style:none;margin:8px 0 0;padding:0;background:#fff;border-radius:10px;border:1px solid var(--line)}
+#hits:empty{display:none}
+#hits li+li{border-top:1px solid var(--line)}
+#hits button{display:block;width:100%;text-align:left;background:none;border:0;padding:14px 12px;min-height:48px}
+#hits button:hover{background:#eef2f5}
+#hits button[aria-current=true]{background:#fff3b8;font-weight:600}
+#hits .none{padding:14px 12px;color:var(--mute)}
+.platebox{display:inline-block;background:var(--plate);color:#000;border:3px solid #000;border-radius:8px;padding:2px 16px;
+  font:700 2rem/1.25 "Arial Narrow","Roboto Condensed",Arial,sans-serif;letter-spacing:.06em}
+#p_name{margin:8px 0 12px;color:var(--mute)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;padding:12px;background:#fff;border-radius:10px;border:1px solid var(--line)}
+dt{color:var(--mute)}dd{margin:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.empty{display:none;color:var(--mute);padding:48px 0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:14px;align-items:center;justify-content:center}
+#msg{min-width:7rem;color:var(--ok);font-weight:600}
+#msg.bad{color:var(--err)}
+#lerr{color:var(--err);min-height:1.4em}
+
+/* PC / tablet lebar: dua panel */
+@media (min-width:860px){
+  main{padding:28px 24px 48px}
+  .split{display:grid;grid-template-columns:320px 1fr;gap:36px;align-items:start}
+  .left{position:sticky;top:20px}
+  #hits{max-height:calc(100vh - 180px);overflow:auto}
+  .empty{display:block}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+  dl{grid-template-columns:auto 1fr auto 1fr;gap:6px 16px}
+  .bar{position:static;border:0;background:none;padding:20px 0 0;flex-direction:row-reverse;justify-content:flex-end}
+  #msg{min-width:0}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Update unit UTS</h1>
+
+  <section id="login" hidden>
+    <label for="pin">PIN akses</label>
+    <input id="pin" type="password" autocomplete="current-password">
+    <p id="lerr" role="alert"></p>
+    <button id="go" class="primary">Masuk</button>
+  </section>
+
+  <section id="app" class="split" hidden>
+    <div class="left">
+      <label for="q" style="margin-top:0">Nopol</label>
+      <input id="q" autocomplete="off" autocapitalize="characters" placeholder="Ketik nopol, contoh B1234XYZ">
+      <ul id="hits"></ul>
+    </div>
+
+    <div>
+      <p id="empty" class="empty">Ketik nopol di kolom kiri, lalu pilih unitnya.</p>
+
+      <section id="unit" hidden>
+        <p style="margin:20px 0 0" class="platewrap"><span class="platebox" id="p_plate"></span></p>
+        <p id="p_name"></p>
+        <dl id="info"></dl>
+
+        <div class="grid2">
+          <div>
+            <label for="f_pool">Tanggal Masuk Pool (IN)</label>
+            <input id="f_pool" type="date">
+          </div>
+          <div>
+            <label for="f_bengkel">Tanggal Masuk Bengkel (IN)</label>
+            <input id="f_bengkel" type="date">
+          </div>
+        </div>
+
+        <label for="f_est">Estimasi Unit Selesai</label>
+        <div class="row">
+          <input id="f_est" type="date">
+          <select id="f_flag" aria-label="Status khusus">
+            <option value="">Pakai tanggal</option>
+            <option value="CTL">CTL</option>
+            <option value="TLO">TLO</option>
+          </select>
+        </div>
+
+        <label for="f_prog">Progress Today</label>
+        <textarea id="f_prog" maxlength="500"></textarea>
+
+        <div class="bar">
+          <span id="msg" role="status"></span>
+          <button id="save" class="primary">Simpan</button>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const norm = (s) => String(s || '').replace(/[^a-z0-9]/gi, '').toUpperCase();
+const wide = () => window.innerWidth >= 860;
+let units = [], cur = null;
+
+function view(name) { $('login').hidden = name !== 'login'; $('app').hidden = name !== 'app'; }
+function setMsg(t, bad) { const m = $('msg'); m.textContent = t; m.className = bad ? 'bad' : ''; }
+
+async function api(path, body) {
+  const r = await fetch(path, body
+    ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }
+    : {});
+  if (r.status === 401 && path !== '/api/login') { view('login'); throw new Error('Belum login'); }
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || 'Gagal');
+  return j;
+}
+
+async function init() {
+  try {
+    units = await api('/api/units');
+    units.forEach((u) => { u.k = norm(u.plate); });
+    view('app');
+    $('q').focus();
+  } catch (e) { view('login'); }
+}
+
+$('pin').onkeydown = (e) => { if (e.key === 'Enter') $('go').click(); };
+$('go').onclick = async () => {
+  try {
+    await api('/api/login', { pin: $('pin').value });
+    $('pin').value = ''; $('lerr').textContent = '';
+    init();
+  } catch (e) { $('lerr').textContent = e.message; }
+};
+
+function renderHits() {
+  const k = norm($('q').value), ul = $('hits');
+  ul.textContent = '';
+  if (k.length < 2) return;
+  units.filter((u) => u.k.includes(k)).slice(0, wide() ? 30 : 8).forEach((u) => {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.textContent = u.plate + (u.name ? '  ' + u.name : '');
+    b.dataset.id = u.id;
+    b.setAttribute('aria-current', cur && cur.device_id === u.id ? 'true' : 'false');
+    b.onclick = () => pick(u.id);
+    li.appendChild(b); ul.appendChild(li);
+  });
+  if (!ul.children.length) {
+    const li = document.createElement('li');
+    li.className = 'none'; li.textContent = 'Nopol tidak ditemukan';
+    ul.appendChild(li);
+  }
+}
+$('q').oninput = renderHits;
+$('q').onkeydown = (e) => {
+  if (e.key === 'Enter') { const b = $('hits').querySelector('button'); if (b) b.click(); }
+};
+
+$('f_flag').onchange = () => {
+  const on = !!$('f_flag').value;
+  $('f_est').disabled = on;
+  if (on) $('f_est').value = '';
+};
+
+async function pick(id) {
+  setMsg('');
+  try {
+    cur = await api('/api/unit?id=' + encodeURIComponent(id));
+    $('p_plate').textContent = cur.license_plate || '-';
+    $('p_name').textContent = [cur.device_name, cur.class_id].filter(Boolean).join(', ');
+    const info = $('info'); info.textContent = '';
+    [['Pool', cur.device_pool_id], ['Lokasi', cur.location_unit], ['Utility', cur.utility_status],
+     ['Kondisi', cur.condition_status], ['Bengkel', cur.workshop_name], ['Perbaikan', cur.jenis_perbaikan]]
+      .forEach(([k, v]) => {
+        const dt = document.createElement('dt'), dd = document.createElement('dd');
+        dt.textContent = k; dd.textContent = v || '-'; info.append(dt, dd);
+      });
+    $('f_pool').value = cur.tgl_masuk_pool || '';
+    $('f_bengkel').value = cur.tgl_masuk_bengkel || '';
+    const sp = cur.estimasi_selesai === 'CTL' || cur.estimasi_selesai === 'TLO';
+    $('f_flag').value = sp ? cur.estimasi_selesai : '';
+    $('f_est').value = sp ? '' : (cur.estimasi_selesai || '');
+    $('f_est').disabled = sp;
+    $('f_prog').value = cur.progress_today || '';
+    $('empty').hidden = true;
+    $('unit').hidden = false;
+    if (wide()) {            // PC: daftar tetap tampil, unit terpilih ditandai
+      renderHits();
+    } else {                 // HP: daftar ditutup, fokus ke form
+      $('hits').textContent = ''; $('q').value = '';
+    }
+  } catch (e) { setMsg(e.message, true); }
+}
+
+$('save').onclick = async () => {
+  if (!cur) return;
+  const btn = $('save'); btn.disabled = true; setMsg('Menyimpan');
+  try {
+    await api('/api/save', {
+      device_id: cur.device_id,
+      tgl_masuk_pool: $('f_pool').value,
+      tgl_masuk_bengkel: $('f_bengkel').value,
+      estimasi_selesai: $('f_flag').value || $('f_est').value,
+      progress_today: $('f_prog').value,
+    });
+    setMsg('Tersimpan');
+  } catch (e) { setMsg(e.message, true); }
+  btn.disabled = false;
+};
+document.addEventListener('keydown', (e) => {   // Ctrl/Cmd + Enter = Simpan
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !$('unit').hidden) $('save').click();
+});
+
+init();
+</script>
+</body>
+</html>
